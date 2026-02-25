@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>LAN Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Local Socket.IO -->
+    <script src="/socket.io.min.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      header {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 15px;
+        text-align: center;
+        font-size: 1.5em;
+        font-weight: bold;
+      }
+      #chat {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        list-style-type: none;
+      }
+      #chat li {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 10px 15px;
+        margin: 5px 0;
+        border-radius: 15px;
+        max-width: 80%;
+      }
+      #chat li.self {
+        background: rgba(0, 0, 0, 0.3);
+        margin-left: auto;
+        text-align: right;
+      }
+      footer {
+        display: flex;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+      footer input {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 20px;
+        outline: none;
+      }
+      footer button {
+        margin-left: 10px;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 20px;
+        background: #ff6b6b;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      footer button:hover {
+        background: #ff4757;
+      }
+    </style>
+  </head>
+  <body>
+    <header>🔥 LAN Chat</header>
+    <ul id="chat"></ul>
+    <footer>
+      <input id="msg" placeholder="Type a message..." autocomplete="off" />
+      <button onclick="sendMessage()">Send</button>
+    </footer>
+
+    <script>
+      const socket = io();
+      const chat = document.getElementById("chat");
+      const input = document.getElementById("msg");
+
+      // ask user for nickname
+      let nickname = prompt("Enter your nickname:", "Guest") || "Guest";
+
+      socket.on("message", function (data) {
+        let li = document.createElement("li");
+        li.textContent = data.name + ": " + data.text;
+
+        if (data.name === nickname) li.classList.add("self");
+
+        chat.appendChild(li);
+        chat.scrollTop = chat.scrollHeight;
+      });
+
+      function sendMessage() {
+        const text = input.value.trim();
+        if (!text) return;
+        socket.send({ name: nickname, text: text });
+        input.value = "";
+      }
+
+      // enter key support
+      input.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") sendMessage();
+      });
+    </script>
+  </body>
+</html>
