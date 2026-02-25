@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Multiplayer Canvas</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        font-family: Arial;
+      }
+      #users {
+        width: 200px;
+        background: #111;
+        color: white;
+        padding: 10px;
+      }
+      #canvas {
+        flex: 1;
+        background: #fff;
+        touch-action: none;
+      }
+      .user {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="users"></div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+      const socket = io();
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const usersDiv = document.getElementById("users");
+
+      canvas.width = window.innerWidth - 200;
+      canvas.height = window.innerHeight;
+
+      let drawing = false;
+      let myColor = "black";
+
+      // ask name
+      const name = prompt("Enter your name:");
+      socket.emit("join", name);
+
+      // receive my color
+      socket.on("init", (data) => {
+        myColor = data.color;
+      });
+
+      // update users list
+      socket.on("users", (users) => {
+        usersDiv.innerHTML = "<h3>Users</h3>";
+        Object.values(users).forEach((u) => {
+          usersDiv.innerHTML += `<div class="user" style="color:${u.color}">
+        ■ ${u.name}
+      </div>`;
+        });
+      });
+
+      // pointer events (mouse + touch + pen)
+      canvas.addEventListener("pointerdown", (e) => {
+        drawing = true;
+        draw(e);
+      });
+
+      canvas.addEventListener("pointermove", (e) => {
+        if (!drawing) return;
+        draw(e);
+      });
+
+      canvas.addEventListener("pointerup", () => (drawing = false));
+      canvas.addEventListener("pointerleave", () => (drawing = false));
+
+      function draw(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        ctx.fillStyle = myColor;
+        ctx.fillRect(x, y, 4, 4);
+
+        socket.emit("draw", { x, y });
+      }
+
+      // draw from others
+      socket.on("draw", ({ x, y, color }) => {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, 4, 4);
+      });
+    </script>
+  </body>
+</html>
